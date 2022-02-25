@@ -6,18 +6,41 @@ This file creates your application.
 """
 import os
 from app import app
-from flask import render_template, request, redirect, url_for, flash, session, abort
+from flask import render_template, request, redirect, send_from_directory, url_for, flash, session, abort
 from werkzeug.utils import secure_filename
 
 from app.forms import UploadForm
 
 
 
-
+def get_uploaded_images():
+    rootdir = os.getcwd()
+    
+    images = []
+    
+    for subdir, dirs, files in os.walk(rootdir + app.config['UPLOAD_FOLDER']):
+        
+        for file in files:
+            if (file.endswith(('png', 'jpg', 'jpeg'))):
+                images.append(file)
+            
+    return images
 
 ###
 # Routing for your application.
 ###
+
+
+@app.route('/uploads/<filename>')
+def get_image(filename):
+    return send_from_directory(os.path.join(os.getcwd(), app.config['UPLOAD_FOLDER']), filename)
+    
+
+@app.route('/files')
+def files():
+    images = get_uploaded_images()
+    return render_template('files.html', images=images)
+
 
 @app.route('/')
 def home():
@@ -33,7 +56,6 @@ def about():
 
 @app.route('/upload', methods=['POST', 'GET'])
 def upload():
-    
     if not session.get('logged_in'):
         abort(401)
 
@@ -54,6 +76,9 @@ def upload():
             
             # Upload file code
             flash('File Saved', 'success')
+            
+            images = get_uploaded_images()
+            
             return redirect(url_for('home'))
         # Otherwise
         flash('Something went wrong', 'error')
@@ -63,7 +88,8 @@ def upload():
 
 
 @app.route('/login', methods=['POST', 'GET'])
-def login():
+def login(): 
+    session['logged_in'] = True
     error = None
     if request.method == 'POST':
         if request.form['username'] != app.config['ADMIN_USERNAME'] or request.form['password'] != app.config['ADMIN_PASSWORD']:
