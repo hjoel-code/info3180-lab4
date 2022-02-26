@@ -57,39 +57,39 @@ def about():
 @app.route('/upload', methods=['POST', 'GET'])
 def upload():
     if not session.get('logged_in'):
-        abort(401)
+        return redirect(url_for('login'))
 
     # Instantiate your form class
-    uploadForm = UploadForm(request.form)
+    data = request.form.copy()
+    data.update(request.files)
+    
+    
+    uploadForm = UploadForm(data)
     
 
     # Validate file upload on submit
     if request.method == 'POST':
         # Get file data and save to your uploads folder
         
-        print(uploadForm.validate())
-        if uploadForm.fileUpload:
+        
+        if (uploadForm.validate_on_submit()):
             
             image = request.files['fileUpload']
-            fileName = secure_filename(image.filename) 
-            image.save(os.path.join(app.config['UPLOAD_FOLDER'], fileName))
+            filename = secure_filename(image.filename) 
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             
             # Upload file code
             flash('File Saved', 'success')
-            
-            images = get_uploaded_images()
-            
             return redirect(url_for('home'))
-        # Otherwise
-        flash('Something went wrong', 'error')
-        pass
+        
+        for error in uploadForm.errors:
+            flash(error, 'error')
 
     return render_template('upload.html', uploadForm=uploadForm)
 
 
 @app.route('/login', methods=['POST', 'GET'])
 def login(): 
-    session['logged_in'] = True
     error = None
     if request.method == 'POST':
         if request.form['username'] != app.config['ADMIN_USERNAME'] or request.form['password'] != app.config['ADMIN_PASSWORD']:
