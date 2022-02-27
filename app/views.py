@@ -82,8 +82,10 @@ def upload():
             flash('File Saved', 'success')
             return redirect(url_for('home'))
         
-        for error in uploadForm.errors:
+        
+        for error in uploadForm.fileUpload.errors:
             flash(error, 'error')
+            
 
     return render_template('upload.html', uploadForm=uploadForm)
 
